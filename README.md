@@ -564,20 +564,23 @@ kubectl set image ...
 ## Configmap
 - configmap.yaml 파일설정
 
-![image](https://user-images.githubusercontent.com/68535067/97378420-a8a74f00-1905-11eb-94e6-f76f9e9fda40.png)
+![image](https://user-images.githubusercontent.com/69283661/97449296-dc6d8d80-1974-11eb-8516-67d697465b49.png)
 
 - deployment.yaml파일 설정
-![image](https://user-images.githubusercontent.com/68535067/97378494-c8d70e00-1905-11eb-8e8e-208ade4772fe.png)
+
+![image](https://user-images.githubusercontent.com/69283661/97449434-01620080-1975-11eb-87d5-a3fdc3b2ca13.png)
 
 - application.yaml 파일 설정
-![image](https://user-images.githubusercontent.com/68535067/97378559-edcb8100-1905-11eb-804d-e8c61afed969.png)
 
-- paymentService 파일 설정
-![image](https://user-images.githubusercontent.com/68535067/97378637-28351e00-1906-11eb-8774-98d9dd0eee0e.png)
+![image](https://user-images.githubusercontent.com/69283661/97449507-18085780-1975-11eb-9755-5f62a835bda0.png)
+
+- deliveryService 파일 설정
+
+![image](https://user-images.githubusercontent.com/69283661/97449586-2ce4eb00-1975-11eb-838c-31e13028f878.png)
 
 
 - 80포트로 설정하여 테스트
-![image](https://user-images.githubusercontent.com/68535067/97378359-8ad9ea00-1905-11eb-952d-641a380a02c9.png)
+![image](https://user-images.githubusercontent.com/69283661/97450933-97e2f180-1976-11eb-9415-c7a7d3d3b49c.png)
 
 ## Livness구현
 - POINT의 depolyment.yaml 소스설정
