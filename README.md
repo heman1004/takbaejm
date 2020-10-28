@@ -281,14 +281,14 @@ http http://localhost:8086/returns requestId=4 reason="test return"
 
 ## 동기식 호출과 Fallback 처리
 
-분석단계에서의 조건 중 하나로 접수(request)->결제(payment) 간의 호출은 동기식 일관성을 유지하는 트랜잭션으로 처리하기로 하였다. 호출 프로토콜은 이미 앞서 Rest Repository 에 의해 노출되어있는 REST 서비스를 FeignClient를 이용하여 호출하도록 한다. 
+분석단계에서의 조건 중 하나로 반납(return)->배송(delivery) 간의 호출은 동기식 일관성을 유지하는 트랜잭션으로 처리하기로 하였다. 호출 프로토콜은 이미 앞서 Rest Repository 에 의해 노출되어있는 REST 서비스를 FeignClient를 이용하여 호출하도록 한다. 
 
-- 결제서비스를 호출하기 위하여 FeignClient 를 이용하여 Service 대행 인터페이스 (Proxy) 를 구현 
+- 배송서비스를 호출하기 위하여 FeignClient 를 이용하여 Service 대행 인터페이스 (Proxy) 를 구현 
 
 ```
-# (payment) PaymentService.java
+# (delivery) DeliveryService.java
 
-package takbaeyo.external;
+package takbaejm.external;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -297,54 +297,59 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.Date;
 
-@FeignClient(name="payment", url="${api.url.payment}")
-public interface PaymentService {
+@FeignClient(name="delivery", url="${api.url.delivery}")
+public interface DeliveryService {
 
-    @RequestMapping(method= RequestMethod.POST, path="/payments")
-    public void dopay(@RequestBody Payment payment);
+    @RequestMapping(method= RequestMethod.POST, path="/deliveries")
+    public void delivery(@RequestBody Delivery delivery);
 
 }
 ```
 
-- 접수를 받은 직후(@PostPersist) 결제를 요청하도록 처리
+- 반납을 받은 직후(@PostPersist) 배송을 요청하도록 처리
 ```
-# Request.java (Entity)
-  @PostPersist
+# Return.java (Entity)
+@PostPersist
     public void onPostPersist(){
-        Requested requested = new Requested();
-        BeanUtils.copyProperties(this, requested);
-        requested.publishAfterCommit();
-        takbaeyo.external.Payment payment = new takbaeyo.external.Payment();
-        payment.setRequestId(this.getId());
-        payment.setMemberId(this.getMemberId());
-        payment.setStatus("Paid");
-        
+        Returned returned = new Returned();
+        BeanUtils.copyProperties(this, returned);
+        returned.publishAfterCommit();
+
+        //Following code causes dependency to external APIs
+        // it is NOT A GOOD PRACTICE. instead, Event-Policy mapping is recommended.
+
+        takbaejm.external.Delivery delivery = new takbaejm.external.Delivery();
+
+        delivery.setRequestId(this.getRequestId());
+        delivery.setStatus("Returned");
+
         // mappings goes here
-        RequestApplication.applicationContext.getBean(takbaeyo.external.PaymentService.class)
-            .dopay(payment);
+        ReturnApplication.applicationContext.getBean(takbaejm.external.DeliveryService.class)
+            .delivery(delivery);
+
 
     }
 ```
 
-- 동기식 호출에서는 호출 시간에 따른 타임 커플링이 발생하며, 결제 시스템이 장애가 나면 접수도 못받는다는 것을 확인:
+- 동기식 호출에서는 호출 시간에 따른 타임 커플링이 발생하며, 배송 시스템이 장애가 나면 반납도 못받는다는 것을 확인:
 
 
 ```
-# 결제 (payment) 서비스를 잠시 내려놓음 (ctrl+c)
+# 배송(delivery) 서비스를 잠시 내려놓음 (ctrl+c)
 
-# 접수처리
-http localhost:8081/requests memberId=10 qty=10   #Fail
+# 반납처리
+http http://localhost:8086/returns requestId=3 reason="test sync"
 ```
-![image](https://user-images.githubusercontent.com/68535067/97143766-a4185480-17a6-11eb-9bb1-e2eff4e2cb04.png)
+![image](https://user-images.githubusercontent.com/69283661/97410707-c2b35280-1942-11eb-84cb-6888bb030d01.png)
 ```
-# payment서비스 재기동
-cd payment
+# 배송 서비스 재기동
+cd delivery
 mvn spring-boot:run
 
-#주문처리
-http localhost:8081/requests memberId=10 qty=10  #Success
+#반납처리
+http http://localhost:8086/returns requestId=3 reason="test sync"
 ```
-![image](https://user-images.githubusercontent.com/68535067/97144102-36205d00-17a7-11eb-9b4b-8956467228d7.png)
+![image](https://user-images.githubusercontent.com/69283661/97411146-3c4b4080-1943-11eb-950c-a21a416c2cf6.png)
 
 ```
 - 또한 과도한 요청시에 서비스 장애가 도미노 처럼 벌어질 수 있다. (서킷브레이커, 폴백 처리는 운영단계에서 설명한다.)
