@@ -534,30 +534,28 @@ kubectl get deploy delivery -w
 
 - seige 로 배포작업 직전에 워크로드를 모니터링 함.
 ```
-siege -c100 -t120S -r10 --content-type "application/json" 'http://request:8080/requests POST {"memberId": "100", "qty":5}'
+siege -c100 -t120S -r10 -v --content-type "application/json" 'http://return:8080/returns POST {"requestId": 1, "reason":"Test"}'
 
 ```
 
-- 새버전으로의 배포 시작
+- 새버전으로의 배포 시작 
 ```
 kubectl set image ...
 ```
 
 - seige 의 화면으로 넘어가서 Availability 가 100% 미만으로 떨어졌는지 확인
-![image](https://user-images.githubusercontent.com/68535067/97380841-36396d80-190b-11eb-8aa9-0d1e4efbcd11.png)
+![image](https://user-images.githubusercontent.com/69283661/97448040-8a783800-1973-11eb-9929-be0e5284228d.png)
 
 
-배포기간중 Availability 가 평소 100%에서 60% 대로 떨어지는 것을 확인. 원인은 쿠버네티스가 성급하게 새로 올려진 서비스를 READY 상태로 인식하여 서비스 유입을 진행한 것이기 때문. 이를 막기위해 Readiness Probe 를 설정함:
+배포기간중 Availability 가 평소 100%에서 80% 대로 떨어지는 것을 확인. 원인은 쿠버네티스가 성급하게 새로 올려진 서비스를 READY 상태로 인식하여 서비스 유입을 진행한 것이기 때문. 이를 막기위해 Readiness Probe 를 설정함:
 
 ```
-# deployment.yaml 의 readiness probe 의 설정:
+# deployment.yaml 의 readiness probe 의 설정 후 재배포
 
-
-kubectl apply -f kubernetes/deployment.yaml
 ```
 
 - 동일한 시나리오로 재배포 한 후 Availability 확인:
-![image](https://user-images.githubusercontent.com/68535067/97247604-569df500-1843-11eb-9c50-a405a5f6c9c4.png)
+![image](https://user-images.githubusercontent.com/69283661/97448835-69641700-1974-11eb-841d-3802882aecb4.png)
 
 배포기간 동안 Availability 가 변화없기 때문에 무정지 재배포가 성공한 것으로 확인됨.
 
