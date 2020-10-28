@@ -358,47 +358,15 @@ http http://localhost:8086/returns requestId=3 reason="test sync"
 
 
 ## 비동기식 호출 / 시간적 디커플링 / 장애격리 / 최종 (Eventual) 일관성 테스트
-배달이 왼료되어진 후에 포인트시스템으로 이를 알려주는 행위는 동기식이 아니라 비 동기식으로 처리하여 포인트시스템의 처리를 위하여 접수/배달/결제가 블로킹 되지 않도록 처리한다.
+반납이 왼료되어진 후에 포인트시스템으로 이를 알려주는 행위는 동기식이 아니라 비 동기식으로 처리하여 포인트 시스템의 처리를 위하여 반납이 블로킹 되지 않도록 처리한다.
  
-- 이를 위하여 배달이력에 기록을 남긴 후에 곧바로 배달완료 되었다는 도메인 이벤트를 카프카로 송출한다(Publish)
- 
-```
-package takbaeyo;
-
-import javax.persistence.*;
-import org.springframework.beans.BeanUtils;
-import java.util.List;
-
-@Entity
-@Table(name="Delivery_table")
-public class Delivery {
-
-    @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
-    private Long id;
-    private Long requestId;
-    private String status;
-    private String location;
-    private String courierName;
-    private Long memberId;
-
-    @PostUpdate
-    public void onPostUpdate(){
-        Delivered delivered = new Delivered();
-        BeanUtils.copyProperties(this, delivered);
-        delivered.publishAfterCommit();
-    }
-
-}
-
+- 이를 위하여 반납에 기록을 남긴 후에 곧바로 반납 되었다는 도메인 이벤트를 카프카로 송출한다(Publish)
+- 포인트 서비스에서는 배달완료 이벤트에 대해서 이를 수신하여 자신의 정책을 처리하도록 PolicyHandler 를 구현한다.
 
 ```
-- 포인트 서비스에서는 배달완료 이벤트에 대해서 이를 수신하여 자신의 정책을 처리하도록 PolicyHandler 를 구현한다:
+package takbaejm;
 
-```
-package takbaeyo;
-
-import takbaeyo.config.kafka.KafkaProcessor;
+import takbaejm.config.kafka.KafkaProcessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -411,6 +379,7 @@ import java.util.Optional;
 
 @Service
 public class PolicyHandler{
+
     @Autowired
     PointRepository pointRepository;
 
@@ -418,33 +387,33 @@ public class PolicyHandler{
     public void onStringEventListener(@Payload String eventString){
 
     }
-
+    .....
+    
     @StreamListener(KafkaProcessor.INPUT)
-    public void wheneverDelivered_GetPointPol(@Payload Delivered delivered){
+    public void wheneverReturned_GetPointPol(@Payload Returned returned){
 
-        if(delivered.isMe()){
+        if(returned.isMe()){
             int flag=0;
             Iterator<Point> iterator = pointRepository.findAll().iterator();
             while(iterator.hasNext()){
-
                 Point pointTmp = iterator.next();
-                if((pointTmp.getMemberId() == delivered.getMemberId()) && delivered.getStatus().equals("Finish")){
+                if(pointTmp.getMemberId() == returned.getMemberId()){
                     Optional<Point> PointOptional = pointRepository.findById(pointTmp.getId());
                     Point point = PointOptional.get();
-                    point.setPoint(point.getPoint()+100);
+                    point.setPoint(point.getPoint()-100);
                     pointRepository.save(point);
                     flag=1;
                 }
-
             }
 
-            if (flag==0 && delivered.getStatus().equals("Finish")){
+            if (flag==0 ){
                 Point point = new Point();
-                point.setMemberId(delivered.getMemberId());
-                point.setPoint((long)100);
+                point.setMemberId(returned.getMemberId());
+                point.setPoint((long)-100);
                 pointRepository.save(point);
             }
-            System.out.println("##### listener GetPointPol : " + delivered.toJson());
+
+            System.out.println("##### listener GetPointPol : " + returned.toJson());
         }
     }
 
@@ -453,30 +422,16 @@ public class PolicyHandler{
 ```
 
 ```
-포인트 시스템은 배달시스템과 완전히 분리되어있으며, 이벤트 수신에 따라 처리되기 때문에, 포인트시스템이 유지보수로 인해 잠시 내려간 상태라도 배달하는데 문제가 없다
-
-# 포인트 서비스(point)를 잠시 내려놓음
-
-# 배달처리
-http put http://localhost:8083/deliveries/1 courierName="Lee" memberId=10 requestId=2 location="Seoul City" status="Finish"   #Success
+포인트 시스템은 반납시스템과 완전히 분리되어있으며, 이벤트 수신에 따라 처리되기 때문에, 포인트시스템이 유지보수로 인해 잠시 내려간 상태라도 하는데 문제가 없다
+포인트 서비스를 내린 상태에서 반납 처리가 완료된다.
+포인트 서비스를 다시 활성화 시키면 이벤트 수신 후 포인트 정보가 생성된다.
 ```
-![image](https://user-images.githubusercontent.com/68535067/97149492-2ce7be00-17b0-11eb-9ade-c845abb1cb04.png)
-
-```
-
-#포인트 서비스 기동
-cd point
-mvn spring-boot:run
-
-#포인트상태 확인(기동전/후)
-http localhost:8085/points     # 신규포인트 생성됨
-```
-![image](https://user-images.githubusercontent.com/68535067/97152139-d41a2480-17b3-11eb-9ffe-f756331313dc.png)
+![image](https://user-images.githubusercontent.com/69283661/97414662-9bab4f80-1947-11eb-8e42-03ab768c5a66.png)
 
 # CQRS 적용
-접수된 택배현황을 view로 구현함.
+접수된 택배 현황을 view로 구현함.
 
-![image](https://user-images.githubusercontent.com/68535067/97153350-b221a180-17b5-11eb-8bc6-8cf40e16fdca.png)
+![image](https://user-images.githubusercontent.com/69283661/97416059-4b34f180-1949-11eb-9c57-0747de9a7a8c.png)
 
 
 # gateway 적용
