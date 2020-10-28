@@ -583,17 +583,18 @@ kubectl set image ...
 ![image](https://user-images.githubusercontent.com/69283661/97450933-97e2f180-1976-11eb-9415-c7a7d3d3b49c.png)
 
 ## Livness구현
-- POINT의 depolyment.yaml 소스설정
+- return의 depolyment.yaml 소스설정
 - http get방식에서 tcp방식으로 변경, 서비스포트 8080이 아닌 고의로 8081로 포트  변경하여  
-![image](https://user-images.githubusercontent.com/68535067/97388731-08105980-191c-11eb-9c50-c7edace5cff5.png)
+![image](https://user-images.githubusercontent.com/69283661/97451298-f7d99800-1976-11eb-9b5c-000d10da8cb2.png)
+
 -restart확인
-![image](https://user-images.githubusercontent.com/68535067/97383715-93382200-1911-11eb-8db0-f1ad417ced41.png)
+![image](https://user-images.githubusercontent.com/69283661/97452214-d927d100-1977-11eb-876d-14f51dc2fc65.png)
 
 - describe 확인
-![image](https://user-images.githubusercontent.com/68535067/97383827-d4c8cd00-1911-11eb-8cc6-03ac56635131.png)
+![image](https://user-images.githubusercontent.com/69283661/97452487-2310b700-1978-11eb-825a-8cb1d953108d.png)
 
 - 원복후 정상 확인
-![image](https://user-images.githubusercontent.com/68535067/97384522-3178b780-1913-11eb-8625-a2bb3ae953b7.png)
+![image](https://user-images.githubusercontent.com/69283661/97454038-a979c880-1979-11eb-9404-7a9d16aad0fa.png)
 
 
 
