@@ -444,14 +444,14 @@ public class PolicyHandler{
 # 운영
 
 ## CI 설정
-![image](https://user-images.githubusercontent.com/68535067/97244041-f1de9c80-183a-11eb-82c2-a42a1f4c9957.png)
+![image](https://user-images.githubusercontent.com/69283661/97434090-d8844000-1961-11eb-8c20-cd03f86cbab5.png)
 
-![image](https://user-images.githubusercontent.com/69283675/97380059-96c7ab00-1909-11eb-901f-b5aaf6c51772.png)
+![image](https://user-images.githubusercontent.com/69283661/97434130-e89c1f80-1961-11eb-86e5-40ef1b850cb6.png)
 
 ## CD 설정
-![image](https://user-images.githubusercontent.com/68535067/97244102-163a7900-183b-11eb-8a98-bdfdcce1aafd.png)
+![image](https://user-images.githubusercontent.com/69283661/97434215-049fc100-1962-11eb-9f43-3848910fd5a5.png)
 
-![image](https://user-images.githubusercontent.com/69283675/97380141-c4145900-1909-11eb-8bd9-17de9d8081a3.png)
+![image](https://user-images.githubusercontent.com/69283661/97434252-13867380-1962-11eb-861f-1895fbcdfb7d.png)
 
 
 각 구현체들은 각자의 source repository 에 구성되었고, 사용한 CI/CD 플랫폼은 Azure를 사용하였으며, pipeline build script 는 각 프로젝트 폴더 이하에 deployment.yml, service.yml 에 포함되었다.
