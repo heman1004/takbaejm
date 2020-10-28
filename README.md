@@ -436,7 +436,7 @@ public class PolicyHandler{
 
 # gateway 적용
 -소스적용
-![image](https://user-images.githubusercontent.com/68535067/97380314-181f3d80-190a-11eb-84ed-b35188fbe48f.png)
+![image](https://user-images.githubusercontent.com/69283661/97416345-a7981100-1949-11eb-91ac-80c8e9fc69a0.png)
 
 -호출확인
 ![image](https://user-images.githubusercontent.com/68535067/97380473-74825d00-190a-11eb-9afd-8def71948ee9.png)
