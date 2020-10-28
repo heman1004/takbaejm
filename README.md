@@ -129,7 +129,7 @@
 ```
 
 ## 헥사고날 아키텍처 다이어그램 도출
-![image](https://user-images.githubusercontent.com/68535067/97379115-6252ef80-1907-11eb-9d35-f43a8a03b48f.png)
+![image](https://user-images.githubusercontent.com/69283661/97400098-df935a00-1931-11eb-89d0-3313b7e51d59.png)
 
 
     - Chris Richardson, MSA Patterns 참고하여 Inbound adaptor와 Outbound adaptor를 구분함
@@ -139,10 +139,10 @@
 
 # 구현:
 
-분석/설계 단계에서 도출된 헥사고날 아키텍처에 따라, 각 BC별로 대변되는 마이크로 서비스들을 스프링부트와 파이선으로 구현하였다. 구현한 각 서비스를 로컬에서 실행하는 방법은 아래와 같다 (각자의 포트넘버는 8081 ~ 808n 이다)
+분석/설계 단계에서 도출된 헥사고날 아키텍처에 따라, 각 BC별로 대변되는 마이크로 서비스들을 스프링부트로 구현하였다. 구현한 각 서비스를 로컬에서 실행하는 방법은 아래와 같다 (각자의 포트넘버는 8081 ~ 808n 이다)
 
 ```
-cd apigate
+cd gateway
 mvn spring-boot:run
 
 cd delivery
@@ -159,56 +159,55 @@ mvn spring-boot:run
 
 cd request
 mvn spring-boot:run 
+
+cd return
+mvn spring-boot:run 
 ```
 
 ## DDD 의 적용
 
-- 각 서비스내에 도출된 핵심 Aggregate Root 객체를 Entity 로 선언하였다: (예시는 request 마이크로 서비스). 이때 가능한 현업에서 사용하는 언어 (유비쿼터스 랭귀지)를 그대로 사용하였고, 모든 구현에 있어서 영문으로 사용하여 별다른  오류없이 구현하였다.
+- 각 서비스내에 도출된 핵심 Aggregate Root 객체를 Entity 로 선언하였다: (예시는 return 마이크로 서비스). 이때 가능한 현업에서 사용하는 언어 (유비쿼터스 랭귀지)를 그대로 사용하였고, 모든 구현에 있어서 영문으로 사용하여 별다른  오류없이 구현하였다.
 
 ```
-package takbaeyo;
+package takbaejm;
 
 import javax.persistence.*;
 import org.springframework.beans.BeanUtils;
 import java.util.List;
 
 @Entity
-@Table(name="Request_table")
-public class Request {
+@Table(name="Return_table")
+public class Return {
 
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
     private Long id;
     private Long memberId;
     private Long qty;
-    private String status="Registered";
+    private String reason;
+    private Long requestId;
 
     @PostPersist
     public void onPostPersist(){
-        Requested requested = new Requested();
-        BeanUtils.copyProperties(this, requested);
-        requested.publishAfterCommit();
+        Returned returned = new Returned();
+        BeanUtils.copyProperties(this, returned);
+        returned.publishAfterCommit();
 
         //Following code causes dependency to external APIs
         // it is NOT A GOOD PRACTICE. instead, Event-Policy mapping is recommended.
 
-        takbaeyo.external.Payment payment = new takbaeyo.external.Payment();
-        payment.setRequestId(this.getId());
-        payment.setMemberId(this.getMemberId());
-        payment.setStatus("Paid");
+        takbaejm.external.Delivery delivery = new takbaejm.external.Delivery();
+
+        delivery.setRequestId(this.getRequestId());
+        delivery.setStatus("Returned");
 
         // mappings goes here
-        RequestApplication.applicationContext.getBean(takbaeyo.external.PaymentService.class)
-            .dopay(payment);
+        ReturnApplication.applicationContext.getBean(takbaejm.external.DeliveryService.class)
+            .delivery(delivery);
+
 
     }
 
-    @PreUpdate
-    public void onPreUpdate(){
-        ReqCanceled reqCanceled = new ReqCanceled();
-        BeanUtils.copyProperties(this, reqCanceled);
-        reqCanceled.publishAfterCommit();
-    }
 
     public Long getId() {
         return id;
@@ -231,13 +230,23 @@ public class Request {
     public void setQty(Long qty) {
         this.qty = qty;
     }
-    public String getStatus() {
-        return status;
+    public String getReason() {
+        return reason;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setReason(String reason) {
+        this.reason = reason;
     }
+    public Long getRequestId() {
+        return requestId;
+    }
+
+    public void setRequestId(Long requestId) {
+        this.requestId = requestId;
+    }
+
+
+
 
 }
 
@@ -255,20 +264,17 @@ public interface RequestRepository extends PagingAndSortingRepository<Request, L
 
 - 적용 후 REST API 의 테스트
 ```
-# request 서비스의 접수처리
-http localhost:8081/requests memberId=10 qty=10
+# request 서비스의 접수처리 후 delivery
+http localhost:8081/requests memberId=40 qty=40
+http http://localhost:8083/deliveries
 ```
-![image](https://user-images.githubusercontent.com/68535067/97144102-36205d00-17a7-11eb-9b4b-8956467228d7.png)
+![image](https://user-images.githubusercontent.com/69283661/97407339-e32cde00-193d-11eb-9030-e3732e165eb1.png)
 ```
-# request 서비스의 접수상태확인
-http localhost:8081/requests/2
+
+# return 서비스의 반납처리
+http http://localhost:8086/returns requestId=4 reason="test return"
 ```
-![image](https://user-images.githubusercontent.com/68535067/97144196-5f40ed80-17a7-11eb-8ace-5792c7b783d9.png)
-```
-# delivery 서비스의 배달처리
-http put http://localhost:8083/deliveries/1 courierName="Lee" memberId=10 requestId=2 location="Ulsan City" status="Picked"
-```
-![image](https://user-images.githubusercontent.com/68535067/97144626-22292b00-17a8-11eb-954b-10d50ed05a37.png)
+![image](https://user-images.githubusercontent.com/69283661/97408949-33a53b00-1940-11eb-87ec-a9027dc804e3.png)
 
 
 ## 동기식 호출과 Fallback 처리
