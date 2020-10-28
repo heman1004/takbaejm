@@ -439,7 +439,7 @@ public class PolicyHandler{
 ![image](https://user-images.githubusercontent.com/69283661/97416345-a7981100-1949-11eb-91ac-80c8e9fc69a0.png)
 
 -호출확인
-![image](https://user-images.githubusercontent.com/68535067/97380473-74825d00-190a-11eb-9afd-8def71948ee9.png)
+![image](https://user-images.githubusercontent.com/69283661/97418885-bb914200-194c-11eb-85bf-5386a70bb6ea.png)
 
 # 운영
 
