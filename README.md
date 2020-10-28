@@ -479,24 +479,26 @@ hystrix:
 
 - 피호출 서비스(배송:delivery) 의 임의 부하 처리 - 400 밀리에서 증감 300 밀리 정도 왔다갔다 하게
 ```
-  @PostUpdate
-    public void onPostUpdate(){
-        Delivered delivered = new Delivered();
-        BeanUtils.copyProperties(this, delivered);
-        delivered.publishAfterCommit();
+  @PostPersist
+    public void onPostPersist(){
 
         try {
             Thread.sleep((long) (400 + Math.random() * 300));
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        Delivered delivered = new Delivered();
+        BeanUtils.copyProperties(this, delivered);
+        delivered.publishAfterCommit();
+
     }
 ```
 
 * 부하테스터 siege 툴을 통한 서킷 브레이커 동작 확인:
 - 동시사용자 1명
 - 10초 동안 실시
-![image](https://user-images.githubusercontent.com/69283661/97438930-dbcefa00-1968-11eb-9ccd-650ccc419233.png)
+![image](https://user-images.githubusercontent.com/69283661/97439282-50099d80-1969-11eb-8367-255dd4ce6561.png)
 
 - 운영시스템은 죽지 않고 지속적으로 CB 에 의하여 적절히 회로가 열림과 닫힘이 벌어지면서 자원을 보호하고 있음을 보여줌. 하지만, 82.35% 가 성공하였고, 17.65%가 실패했다는 것은 고객 사용성에 있어 좋지 않기 때문에 Retry 설정과 동적 Scale out (replica의 자동적 추가,HPA) 을 통하여 시스템을 확장 해주는 후속처리가 필요.
 
@@ -507,24 +509,24 @@ hystrix:
 
 - 결제서비스에 대한 replica 를 동적으로 늘려주도록 HPA 를 설정한다. 설정은 CPU 사용량이 15프로를 넘어서면 replica 를 10개까지 늘려준다:
 ```
-kubectl autoscale deploy payment --min=1 --max=10 --cpu-percent=15
+kubectl autoscale deploy delivery  --min=1 --max=10 --cpu-percent=15
 ```
-![image](https://user-images.githubusercontent.com/68535067/97245477-75e65380-183e-11eb-9557-d247d53be45f.png)
+![image](https://user-images.githubusercontent.com/69283661/97440573-f73b0480-196a-11eb-8a64-aefb9b3e9a3f.png)
 
 - CB 에서 했던 방식대로 워크로드를 2분 동안 걸어준다.
 ```
-siege -c100 -t120S -r10 --content-type "application/json" 'http://request:8080/requests POST {"memberId": "100", "qty":5}'
+siege -c100 -t120S -r10 -v --content-type "application/json" 'http://return:8080/returns POST {"requestId": 1, "reason":"CB Test"}'
 
 ```
 - 오토스케일이 어떻게 되고 있는지 모니터링을 걸어둔다:
 ```
-kubectl get deploy pay -w
+kubectl get deploy delivery -w
 ```
 - 어느정도 시간이 흐른 후 (약 30초) 스케일 아웃이 벌어지는 것을 확인할 수 있다:
-![image](https://user-images.githubusercontent.com/68535067/97246490-d1b1dc00-1840-11eb-8ef2-ec4d6610f3e2.png)
+![image](https://user-images.githubusercontent.com/69283661/97446292-9531cd80-1971-11eb-8e84-52e699f3c694.png)
 
 - siege 의 로그를 보아도 전체적인 성공률이 높아진 것을 확인 할 수 있다. 
-![image](https://user-images.githubusercontent.com/68535067/97247046-2b66d600-1842-11eb-8648-1715eedf0d58.png)
+![image](https://user-images.githubusercontent.com/69283661/97446364-a7ac0700-1971-11eb-95e4-b49c3f3a46c8.png)
 
 ## 무정지 재배포
 
