@@ -32,16 +32,27 @@
 1. 접수가 취소되면 결제가 취소된다
 1. 고객이 현재 택배상태를 조회한다
 1. 택배배달이 완료되면 포인트가 적립된다
+1. 고객으로 부터 반납을 처리한다.
+1. 반납 처리가 되면 배송 상태를 변경한다.
+1. 반납 처리 시 포인트는 반환된다.
+1. 반납 배송을 취소하면 반납도 취소가 된다.
+1. 반납 시 입력한 반납 이유를 조회한다.
+
 
 비기능적 요구사항
 1. 트랜잭션
-    1. 결제가 되지 않은 접수건은 아예 거래가 성립되지 않아야 한다  Sync 호출 
+    1. 결제가 되지 않은 접수건은 아예 거래가 성립되지 않아야 한다  Sync 호출
+    1. 반납이 되지 않는 배송건은 상태가 반납으로 변경되지 않아야 한다. Sync 호출
 1. 장애격리
     1. 포인트 기능이 수행되지 않더라도 접수는 365일 24시간 받을 수 있어야 한다  Async (event-driven), Eventual Consistency
     1. 결제시스템이 과중되면 사용자를 잠시동안 받지 않고 결제를 잠시후에 하도록 유도한다  Circuit breaker, fallback
+    1. 배송 기능이 수행되지 않더라도 반납은 365일 24시간 받을 수 있어야 한다. Async (event-driven), Eventual Consistency
+    1. 배송 기능이 과중되면 고객을 잠시동안 받지 않고 반납을 잠시후에 하도록 유도한다  Circuit breaker, fallback
 1. 성능
     1. 고객이 배달상태를 시스템에서 확인할 수 있다  CQRS
     1. 배달이 완료되면 자동으로 포인트가 적립된다  Event driven
+    1. 고객이 반납상태를 시스템에서 확인할 수 있다  CQRS
+    1. 반납 배달이 완료되면 자동으로 포인트가 재 적립된다  Event driven
     
 
 
@@ -108,12 +119,12 @@
 * MSAEz 로 모델링한 이벤트스토밍 결과: http://www.msaez.io/#/storming/lDc01C8D74YedeH39AqSkSqPoWI3/share/c84563094cddebd6bea82140e3fce52f/-MKI68IU8OMs49uIWAYw
 
 ### 이벤트 도출
-![image](https://user-images.githubusercontent.com/69283675/97377944-87922e80-1904-11eb-9e86-ed04b9c9a826.png)
+![image](https://user-images.githubusercontent.com/69283661/97399113-c38eb900-192f-11eb-9ab7-c7e4f1228bb4.png)
 
 ```
 - 도메인 서열 분리 
     - Core Domain:  request,  delivery : 핵심 서비스이며, 연간 Up-time SLA 수준을 99.999% 목표, 배포주기는 request의 경우 1주일 1회 미만, delivery의 경우 1개월 1회 미만
-    - Supporting Domain:   delivery Dash Board, point : 경쟁력을 내기위한 서비스이며, SLA 수준은 연간 60% 이상 uptime 목표, 배포주기는 각 팀의 자율이나 표준 스프린트 주기가 1주일 이므로 1주일 1회 이상을 기준으로 함.
+    - Supporting Domain: delivery Dash Board, point, return 경쟁력을 내기위한 서비스이며, SLA 수준은 연간 60% 이상 uptime 목표, 배포주기는 각 팀의 자율이나 표준 스프린트 주기가 1주일 이므로 1주일 1회 이상을 기준으로 함.
     - General Domain:   Payment(결제) : 결제서비스로 3rd Party 외부 서비스를 사용하는 것이 경쟁력이 높음 (핑크색으로 이후 전환할 예정)
 ```
 
