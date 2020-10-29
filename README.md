@@ -570,7 +570,7 @@ kubectl set image ...
 
 - deployment.yaml파일 설정
 
-![image](https://user-images.githubusercontent.com/69283661/97449434-01620080-1975-11eb-87d5-a3fdc3b2ca13.png)
+![image](https://user-images.githubusercontent.com/69283661/97513900-bfff3e80-19d0-11eb-9972-ffbaae45340d.png)
 
 - application.yaml 파일 설정
 
