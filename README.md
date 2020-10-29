@@ -19,6 +19,7 @@
     - [오토스케일 아웃](#오토스케일-아웃)
     - [무정지 재배포](#무정지-재배포)
     - [Configmap](#Configmap)
+    - [Polyglot](#Polyglot)
   - [신규 개발 조직의 추가](#신규-개발-조직의-추가)
 
 # 서비스 시나리오
@@ -596,10 +597,10 @@ kubectl set image ...
 - 원복후 정상 확인
 ![image](https://user-images.githubusercontent.com/69283661/97454038-a979c880-1979-11eb-9404-7a9d16aad0fa.png)
 
+## Polyglot
+-- pom.xml 설정 (hsqldb)
 
-
-
-
+![image](https://user-images.githubusercontent.com/69283661/97513147-c8ef1080-19ce-11eb-9eba-fb8b1b06d0fd.png)
 
 
 
